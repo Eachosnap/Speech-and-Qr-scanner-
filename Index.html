@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR + Speech + Timer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #0f0;
+      text-align: center;
+      padding: 40px;
+    }
+
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      background: #0f0;
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      width: 250px;
+      margin-top: 20px;
+      border-radius: 5px;
+      border: 1px solid #0f0;
+      background: #000;
+      color: #0f0;
+    }
+
+    #qrImage {
+      margin-top: 20px;
+      width: 200px;
+      height: 200px;
+    }
+
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #000;
+      border: 1px solid #0f0;
+      border-radius: 8px;
+      font-size: 18px;
+    }
+
+    #timer {
+      font-size: 20px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>QR Code + Speech to Text</h1>
+
+  <div>
+    <input type="text" id="qrInput" placeholder="Enter text for QR">
+    <br>
+    <button onclick="generateQR()">Generate QR</button>
+    <div><img id="qrImage" /></div>
+  </div>
+
+  <hr style="margin: 40px 0; border-color: #0f0;">
+
+  <div>
+    <button onclick="startListening()">🎤 Start Listening</button>
+    <button onclick="stopListening()">✋ Stop Listening</button>
+    <div id="timer">Timer: 0s</div>
+    <div id="output">Your speech will appear here...</div>
+  </div>
+
+  <script>
+    let recognition;
+    let timerInterval;
+    let seconds = 0;
+
+    function generateQR() {
+      const text = document.getElementById("qrInput").value;
+      if (!text) {
+        alert("Enter text first");
+        return;
+      }
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(text)}&size=200x200`;
+      document.getElementById("qrImage").src = qrUrl;
+    }
+
+    function startListening() {
+      const output = document.getElementById("output");
+      const timerDisplay = document.getElementById("timer");
+      seconds = 0;
+      timerDisplay.innerText = "Timer: 0s";
+
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech Recognition not supported.");
+        return;
+      }
+
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = 'ur-PK';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        let finalText = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          finalText += event.results[i][0].transcript + " ";
+        }
+        output.innerText = "You said: " + finalText.trim();
+      };
+
+      recognition.onerror = function(event) {
+        output.innerText = "Error: " + event.error;
+      };
+
+      // Start timer
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerDisplay.innerText = "Timer: " + seconds + "s";
+      }, 1000);
+    }
+
+    function stopListening() {
+      if (recognition) {
+        recognition.stop();
+      }
+      clearInterval(timerInterval);
+    }
+  </script>
+
+</body>
+</html>
